@@ -7,30 +7,35 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    # CRITICAL: If your secret is in an Environment, you must link it here
+    # environment: production 
 
     steps:
       - name: Format Issue
         id: format
         run: |
-          BODY="### 🐛 Bug Report (From Support Repo)
-
-${{ github.event.issue.body }}
-
----
-
-🔗 Original Issue: ${{ github.event.issue.html_url }}
-👤 User: ${{ github.event.issue.user.login }}"
-
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "$BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Create a unique delimiter to handle multi-line strings safely
+          DELIMITER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
+          
+          {
+            echo "BODY<<$DELIMITER"
+            echo "### 🐛 Bug Report (From Support Repo)"
+            echo ""
+            echo "${{ github.event.issue.body }}"
+            echo ""
+            echo "---"
+            echo "🔗 Original Issue: ${{ github.event.issue.html_url }}"
+            echo "👤 User: ${{ github.event.issue.user.login }}"
+            echo "$DELIMITER"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create Issue in Private Repo
         run: |
           curl -X POST https://api.github.com/repos/Khizar-crewLogix/testissue/issues \
-          -H "Authorization: token ${{ secrets.PRIVATE_REPO_TOKEN }}" \
+          -H "Authorization: Bearer ${{ secrets.PRIVATE_REPO_TOKEN }}" \
           -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2026-04-23" \
           -d "$(jq -n \
             --arg title "${{ github.event.issue.title }}" \
-            --arg body "${{ steps.format.outputs.body }}" \
+            --arg body "${{ steps.format.outputs.BODY }}" \
             '{title: $title, body: $body}')"
