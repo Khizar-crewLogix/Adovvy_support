@@ -34,7 +34,6 @@ jobs:
           curl -X POST https://api.github.com/repos/Khizar-crewLogix/testissue/issues \
           -H "Authorization: Bearer ${{ secrets.PRIVATE_REPO_TOKEN }}" \
           -H "Accept: application/vnd.github+json" \
-          -H "X-GitHub-Api-Version: 2026-04-23" \
           -d "$(jq -n \
             --arg title "${{ github.event.issue.title }}" \
             --arg body "${{ steps.format.outputs.BODY }}" \
